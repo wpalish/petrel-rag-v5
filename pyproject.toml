@@ -1,0 +1,14 @@
+[project]
+name = "rag-system-v4"
+version = "4.0.0"
+description = "Локальный корпоративный ИИ-ассистент (On-Premise RAG) — v4 (merge с petrel-rag-assistant)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "-q --tb=short"
+testpaths = ["tests"]
+
+[tool.rag-system]
+stack = "vLLM + bge-m3 + bge-reranker-v2-m3 + Qdrant + LlamaIndex + FastAPI + Gradio"
+features = "hybrid (BM25 + RRF) + PDR + chunk_hash dedup + async streaming + local LLM-judge"

@@ -1,0 +1,254 @@
+{
+  "_meta": {
+    "version": "3.0",
+    "description": "Тестовый набор для RAGAS-оценки On-Premise RAG v3. Вопросы сгруппированы: базовые, мультиязычные, edge-cases (нет ответа), неоднозначные.",
+    "usage": "POST /evaluation/run — прогон всех вопросов. POST /evaluation/run?limit=5 — первые 5.",
+    "fields": {
+      "id": "уникальный идентификатор",
+      "question": "текст вопроса",
+      "language": "ru | kk",
+      "expected_no_answer": "true если в документах НЕТ ответа (проверяем честность модели)",
+      "expected_doc_id": "опц. doc_id документа, где должен быть ответ",
+      "expected_keywords": "опц. список ключевых слов, которые должны быть в ответе",
+      "notes": "комментарий для аналитика"
+    }
+  },
+  "questions": [
+    {
+      "id": "q01",
+      "question": "Сколько календарных дней длится ежегодный оплачиваемый отпуск?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["24"],
+      "notes": "Базовый факт-вопрос. Должен найти конкретное число в регламенте отпусков."
+    },
+    {
+      "id": "q02",
+      "question": "Каков порядок согласования договоров свыше 10 миллионов тенге?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["согласование", "юрист", "финансовый"],
+      "notes": "Процедурный вопрос. Должен вытащить пошаговый порядок."
+    },
+    {
+      "id": "q03",
+      "question": "Какие документы нужны для оформления служебной командировки?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["приказ", "заявление"],
+      "notes": "Перечисление. Должен собрать список из одного или нескольких чанков."
+    },
+    {
+      "id": "q04",
+      "question": "В течение какого времени необходимо подать отчёт после командировки?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["дней"],
+      "notes": "Числовой ответ со сроком."
+    },
+    {
+      "id": "q05",
+      "question": "Кто подписывает приказ о привлечении к сверхурочной работе?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["руководитель", "директор"],
+      "notes": "Вопрос про должность/роль."
+    },
+    {
+      "id": "q06",
+      "question": "Какие существуют основания для привлечения к дисциплинарной ответственности?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["нарушение"],
+      "notes": "Перечисление оснований."
+    },
+    {
+      "id": "q07",
+      "question": "Каков максимальный размер суточных при командировке в города республиканского значения?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["тенге", "МРП"],
+      "notes": "Числовой ответ с валютой."
+    },
+    {
+      "id": "q08",
+      "question": "Какие требования предъявляются к оформлению служебной записки?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["шапка", "подпись"],
+      "notes": "Процедурный вопрос по делопроизводству."
+    },
+    {
+      "id": "q09",
+      "question": "Срок хранения приказов по личному составу?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["лет"],
+      "notes": "Числовой ответ со сроком."
+    },
+    {
+      "id": "q10",
+      "question": "Порядок внесения изменений в штатное расписание?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["приказ"],
+      "notes": "Процедурный вопрос."
+    },
+    {
+      "id": "q11",
+      "question": "Жылдық еңбек демалысы қанша күн?",
+      "language": "kk",
+      "expected_no_answer": false,
+      "expected_keywords": ["24"],
+      "notes": "Казахский вариант q01. Проверка language purity — ответ должен быть на казахском."
+    },
+    {
+      "id": "q12",
+      "question": "Қызметтік іссапарға шығу үшін қандай құжаттар қажет?",
+      "language": "kk",
+      "expected_no_answer": false,
+      "expected_keywords": ["бұйрық", "өтініш"],
+      "notes": "Казахский вариант q03. Ответ должен быть на казахском."
+    },
+    {
+      "id": "q13",
+      "question": "Шартты кім келіседі, егер оның сомасы 10 миллион теңгеден асатын болса?",
+      "language": "kk",
+      "expected_no_answer": false,
+      "expected_keywords": ["заңгер"],
+      "notes": "Казахский вариант q02. Проверка гибридного поиска по казахским терминам."
+    },
+    {
+      "id": "q14",
+      "question": "Еңбек тәртібін бұзғаны үшін қандай жауапкершілік бар?",
+      "language": "kk",
+      "expected_no_answer": false,
+      "expected_keywords": ["айып", "тәртіп"],
+      "notes": "Казахский вариант q06."
+    },
+    {
+      "id": "q15",
+      "question": "Қызметтік хатты қалай рәсімдеу керек?",
+      "language": "kk",
+      "expected_no_answer": false,
+      "expected_keywords": ["тақырып", "қолы"],
+      "notes": "Казахский вариант q08."
+    },
+    {
+      "id": "q16",
+      "question": "Какова процедура увольнения по собственному желанию?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["заявление", "отработка"],
+      "notes": "Процедурный вопрос. Должен найти шаги."
+    },
+    {
+      "id": "q17",
+      "question": "Какие налоги удерживаются с заработной платы сотрудника?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["ИПН", "ОПВ"],
+      "notes": "Финансовый вопрос с аббревиатурами — проверка BM25 на терминах."
+    },
+    {
+      "id": "q18",
+      "question": "Порядок оформления больничного листа?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["лист", "нетрудоспособности"],
+      "notes": "Процедурный вопрос."
+    },
+    {
+      "id": "q19",
+      "question": "Какова продолжительность испытательного срока при приёме на работу?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["месяц"],
+      "notes": "Числовой ответ."
+    },
+    {
+      "id": "q20",
+      "question": "Кто имеет право подписи финансовых документов от имени компании?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["директор", "главный бухгалтер"],
+      "notes": "Вопрос про роли."
+    },
+    {
+      "id": "q21",
+      "question": "Какой размер штрафа за опоздание на работу более чем на 3 часа?",
+      "language": "ru",
+      "expected_no_answer": true,
+      "notes": "Edge-case: в типичных регламентах такого штрафа нет. Модель должна честно сказать 'нет информации'."
+    },
+    {
+      "id": "q22",
+      "question": "Каков порядок получения корпоративного кредита на покупку жилья?",
+      "language": "ru",
+      "expected_no_answer": true,
+      "notes": "Edge-case: корпоративные кредиты обычно не в регламентах. Должен быть no-answer."
+    },
+    {
+      "id": "q23",
+      "question": "Сколько стоит аренда офиса в Алматы?",
+      "language": "ru",
+      "expected_no_answer": true,
+      "notes": "Edge-case: не относится к внутренним регламентам. No-answer."
+    },
+    {
+      "id": "q24",
+      "question": "Какова температура кофе в офисной кухне?",
+      "language": "ru",
+      "expected_no_answer": true,
+      "notes": "Edge-case: явно нет в документах. No-answer."
+    },
+    {
+      "id": "q25",
+      "question": "Қызметкердің жалақысынан қандай салықтар ұсталады?",
+      "language": "kk",
+      "expected_no_answer": false,
+      "expected_keywords": ["ЖӘА", "ЗЖТ"],
+      "notes": "Казахский вариант q17. Проверка BM25 на казахских аббревиатурах."
+    },
+    {
+      "id": "q26",
+      "question": "Еңбек шартын біржақты бұзу тәртібі қандай?",
+      "language": "kk",
+      "expected_no_answer": false,
+      "expected_keywords": ["хабарлама"],
+      "notes": "Казахский вариант q16."
+    },
+    {
+      "id": "q27",
+      "question": "Қызметкерге қандай жағдайда тәртіптік жаза қолданылуы мүмкін?",
+      "language": "kk",
+      "expected_no_answer": false,
+      "expected_keywords": ["бұзу"],
+      "notes": "Казахский вариант q06/q14."
+    },
+    {
+      "id": "q28",
+      "question": "Какие сроки выплаты заработной платы установлены в компании?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["число", "месяц"],
+      "notes": "Числовой ответ — даты выплат."
+    },
+    {
+      "id": "q29",
+      "question": "Что делать, если я потерял пропуск?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["заявление", "охрана"],
+      "notes": "Процедурный вопрос. Может быть no-answer, если в регламентах нет."
+    },
+    {
+      "id": "q30",
+      "question": "Можно ли работать удалённо и в каких случаях?",
+      "language": "ru",
+      "expected_no_answer": false,
+      "expected_keywords": ["удалённ"],
+      "notes": "Процедурный вопрос про remote work."
+    }
+  ]
+}

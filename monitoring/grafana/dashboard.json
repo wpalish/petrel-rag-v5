@@ -1,0 +1,162 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Корпоративный ИИ-Ассистент (On-Premise RAG) — v5 Monitoring",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Requests per second",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(rag_requests_total[5m]))",
+          "legendFormat": "req/s"
+        }
+      ],
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+    {
+      "title": "TTFT (time to first token)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, rate(rag_ttft_seconds_bucket[5m]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(rag_ttft_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(rag_ttft_seconds_bucket[5m]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "title": "Query latency",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, rate(rag_query_latency_seconds_bucket[5m]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(rag_query_latency_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "title": "No-answer rate",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(rag_no_answer_total[5m])) / sum(rate(rag_requests_total[5m]))",
+          "legendFormat": "no-answer %"
+        }
+      ],
+      "gridPos": {"h": 6, "w": 6, "x": 12, "y": 8},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        }
+      }
+    },
+    {
+      "title": "Documents in knowledge base",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rag_documents_total",
+          "legendFormat": "docs"
+        },
+        {
+          "expr": "rag_chunks_total",
+          "legendFormat": "chunks"
+        }
+      ],
+      "gridPos": {"h": 6, "w": 6, "x": 18, "y": 8}
+    },
+    {
+      "title": "LLM health",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rag_llm_reachable",
+          "legendFormat": "reachable"
+        },
+        {
+          "expr": "rag_llm_model_loaded",
+          "legendFormat": "model_loaded"
+        }
+      ],
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 16}
+    },
+    {
+      "title": "BM25 chunks",
+      "type": "stat",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rag_bm25_chunks",
+          "legendFormat": "bm25 chunks"
+        }
+      ],
+      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 16}
+    },
+    {
+      "title": "Requests by status",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(rag_requests_total[5m])) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["rag", "v5", "on-premise"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "RAG Assistant v5 — Overview",
+  "uid": "rag-v5-overview",
+  "version": 1,
+  "weekStart": ""
+}

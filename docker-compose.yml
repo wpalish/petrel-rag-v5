@@ -1,0 +1,215 @@
+# =============================================================================
+# Корпоративный ИИ-Ассистент (On-Premise RAG) — v2 docker-compose
+# =============================================================================
+# Запуск:        docker compose up -d --build
+# Логи:          docker compose logs -f rag-backend rag-ui
+# Остановка:     docker compose down
+# Полный сброс:  docker compose down -v   (удалит все тома)
+# =============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Qdrant — векторная БД с named vectors (dense + sparse reserved).
+  # ---------------------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:v1.12.4         # зафиксированная версия
+    container_name: rag-qdrant
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # TEI — Text Embeddings Inference (bge-m3).
+  # Опционально: используется если USE_TEI=True в .env.
+  # ---------------------------------------------------------------------------
+  tei-embeddings:
+    image: ghcr.io/huggingface/text-embeddings-inference:1.6
+    container_name: rag-tei
+    ports:
+      - "8080:80"
+    volumes:
+      - ./models:/data                  # модели должны быть предзагружены
+    environment:
+      - HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-0}
+    command: ["--model-id", "BAAI/bge-m3", "--port", "80", "--max-batch-tokens", "16384"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:80/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # vLLM — LLM-инференс (Qwen2.5-7B-Instruct-AWQ, OpenAI-compatible API).
+  # КРИТИЧНО: TTFT ≤ 3-5 сек — нужен GPU.
+  # ---------------------------------------------------------------------------
+  vllm:
+    image: vllm/vllm-openai:v0.6.4.post1  # зафиксированная версия
+    container_name: rag-vllm
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./models:/root/.cache/huggingface   # предзагруженные модели
+    environment:
+      - VLLM_NO_USAGE_STATS=1
+      - HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-0}
+    command: >
+      --model Qwen/Qwen2.5-7B-Instruct-AWQ
+      --quantization awq
+      --max-model-len 8192
+      --gpu-memory-utilization 0.85
+      --enable-prefix-caching
+      --port 8000
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Backend (FastAPI) — RAG API, ingestion, admin endpoints.
+  # ---------------------------------------------------------------------------
+  rag-backend:
+    build: .
+    image: rag-backend:4.0
+    container_name: rag-backend
+    command: python -m app.main
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./tests:/app/tests
+      - ./evaluation:/app/evaluation
+      - ./samples:/app/samples
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - VLLM_HOST=vllm
+      - VLLM_PORT=8000
+      - USE_TEI=${USE_TEI:-False}
+      - TEI_HOST=tei-embeddings
+      - TEI_PORT=80
+      - LLM_MODEL=Qwen/Qwen2.5-7B-Instruct-AWQ
+      - LLM_STREAM=${LLM_STREAM:-True}
+      - EMBED_MODEL=BAAI/bge-m3
+      - EMBED_DIM=1024
+      - EMBED_DEVICE=${EMBED_DEVICE:-cpu}
+      - RERANKER_MODEL=BAAI/bge-reranker-v2-m3
+      - RERANKER_DEVICE=${RERANKER_DEVICE:-cpu}
+      - RERANKER_NORMALIZE=True
+      - USE_RERANKER=True
+      - USE_PDR=True
+      - USE_HYBRID=${USE_HYBRID:-True}
+      - USE_CHUNK_HASH_DEDUP=${USE_CHUNK_HASH_DEDUP:-True}
+      - MIN_RERANK_SCORE=${MIN_RERANK_SCORE:-0.30}
+      - HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-0}
+      - VLLM_NO_USAGE_STATS=1
+      - OLLAMA_NO_TELEMETRY=1
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      vllm:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # UI (Gradio) — чат + админка.
+  # ---------------------------------------------------------------------------
+  rag-ui:
+    build: .
+    image: rag-ui:4.0
+    container_name: rag-ui
+    command: python -m app.ui
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./app:/app/app
+      - ./data:/app/data
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - VLLM_HOST=vllm
+      - VLLM_PORT=8000
+      - HF_HUB_OFFLINE=${HF_HUB_OFFLINE:-0}
+    depends_on:
+      - rag-backend
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # v5: Prometheus — сбор метрик с rag-backend, qdrant, vllm
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.55.0
+    container_name: rag-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # v5: Grafana — дашборды поверх Prometheus
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: rag-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./monitoring/grafana/dashboards-provider.yaml:/etc/grafana/provisioning/dashboards/dashboards-provider.yaml:ro
+      - ./monitoring/grafana/dashboard.json:/etc/grafana/provisioning/dashboards/rag-v5-overview.json:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+# =============================================================================
+# Томы
+# =============================================================================
+volumes:
+  qdrant_data:        # векторный индекс (персистентный)
+  prometheus_data:    # v5: метрики Prometheus
+  grafana_data:       # v5: конфигурации Grafana

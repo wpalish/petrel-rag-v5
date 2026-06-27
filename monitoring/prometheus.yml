@@ -1,0 +1,26 @@
+# Prometheus configuration for RAG v5
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "rag-backend"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["rag-backend:8000"]
+        labels:
+          service: "rag"
+          version: "v5"
+
+  - job_name: "qdrant"
+    static_configs:
+      - targets: ["qdrant:6333"]
+        labels:
+          service: "qdrant"
+
+  # vLLM имеет свой /metrics endpoint (если включён в vllm --disable-log-stats)
+  - job_name: "vllm"
+    static_configs:
+      - targets: ["vllm:8000"]
+        labels:
+          service: "vllm"
