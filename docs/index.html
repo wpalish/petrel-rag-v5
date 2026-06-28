@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Корпоративный ИИ-Ассистент · On-Premise RAG</title>
+<meta name="description" content="Локальная RAG-система поиска по корпоративной базе знаний. Open-Source LLM, гибридный поиск, KZ/RU, цитаты. Без внешних API." />
+<style>
+  :root{
+    --bg:oklch(20% 0.03 220); --bg2:oklch(24% 0.03 220); --panel:oklch(26% 0.03 220);
+    --ink:oklch(96% 0.01 220); --muted:oklch(72% 0.02 220); --line:oklch(34% 0.03 220);
+    --accent:oklch(74% 0.13 190); --accent-d:oklch(66% 0.13 190); --ok:oklch(72% 0.15 155);
+    --warn:oklch(76% 0.14 70);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(60% 60% at 80% -10%, oklch(30% 0.05 190 / .5), transparent),
+                     radial-gradient(50% 40% at 0% 0%, oklch(28% 0.05 230 / .4), transparent);}
+  a{color:var(--accent);text-decoration:none;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 1.4rem;}
+  header{display:flex;align-items:center;gap:.7rem;padding:1.3rem 0;}
+  .logo{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-weight:800;
+    background:linear-gradient(135deg,var(--accent),oklch(62% .13 240));color:oklch(18% .02 220);}
+  header b{font-size:1.02rem;} header .sub{font-size:.72rem;color:var(--muted);}
+  .badge{margin-left:auto;display:flex;align-items:center;gap:.45rem;font-size:.76rem;font-weight:700;
+    color:var(--ok);background:oklch(30% .05 155);padding:.35rem .8rem;border-radius:99px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 9px var(--ok);}
+
+  .hero{padding:3.4rem 0 2.6rem;}
+  .tag{display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.04em;color:var(--accent);
+    background:oklch(28% .05 190);padding:.35rem .8rem;border-radius:99px;margin-bottom:1.3rem;}
+  h1{font-size:clamp(2.1rem,1.2rem+3.6vw,3.6rem);line-height:1.07;letter-spacing:-.02em;font-weight:800;}
+  h1 .g{background:linear-gradient(120deg,var(--accent),oklch(70% .13 250));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .lead{margin-top:1.1rem;font-size:1.12rem;color:var(--muted);max-width:680px;}
+  .cta{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1.8rem;}
+  .btn{font-weight:700;padding:.7rem 1.2rem;border-radius:12px;font-size:.92rem;border:1px solid var(--line);
+    transition:transform .15s cubic-bezier(.16,1,.3,1),box-shadow .15s;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn.primary{background:var(--accent);color:oklch(16% .02 220);border-color:transparent;}
+  .btn.ghost{color:var(--ink);background:var(--panel);}
+
+  section{padding:2.4rem 0;}
+  h2{font-size:1.5rem;font-weight:800;letter-spacing:-.01em;margin-bottom:.4rem;}
+  .sub2{color:var(--muted);margin-bottom:1.5rem;max-width:640px;}
+  .grid{display:grid;gap:1rem;}
+  .g3{grid-template-columns:repeat(3,1fr);} .g2{grid-template-columns:repeat(2,1fr);}
+  @media(max-width:760px){.g3,.g2{grid-template-columns:1fr;}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:1.2rem;}
+  .card .ic{font-size:1.5rem;}
+  .card h3{font-size:1.02rem;margin:.55rem 0 .3rem;}
+  .card p{font-size:.9rem;color:var(--muted);}
+
+  .pipe{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;margin-top:.4rem;}
+  .step{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:.55rem .8rem;font-size:.86rem;font-weight:600;}
+  .step.hl{border-color:var(--accent);color:var(--accent);}
+  .arr{color:var(--accent);font-weight:800;}
+
+  .sec-band{background:linear-gradient(135deg,oklch(24% .04 200),oklch(22% .04 240));
+    border:1px solid var(--line);border-radius:20px;padding:1.8rem;}
+  .sec-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:1.2rem;}
+  @media(max-width:760px){.sec-grid{grid-template-columns:1fr;}}
+  .sec-item{display:flex;gap:.7rem;} .sec-item .ck{color:var(--ok);font-weight:800;font-size:1.1rem;}
+  .sec-item b{display:block;margin-bottom:.15rem;} .sec-item span{font-size:.86rem;color:var(--muted);}
+
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;}
+  @media(max-width:760px){.metrics{grid-template-columns:repeat(2,1fr);}}
+  .metric{text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:1.1rem .6rem;}
+  .metric b{display:block;font-size:1.9rem;font-weight:800;color:var(--accent);}
+  .metric span{font-size:.8rem;color:var(--muted);}
+
+  .stack{display:flex;flex-wrap:wrap;gap:.5rem;}
+  .chip{background:var(--bg2);border:1px solid var(--line);border-radius:99px;padding:.4rem .85rem;font-size:.82rem;font-weight:600;color:var(--accent-d);}
+
+  .note{background:oklch(28% .05 70 / .35);border:1px solid var(--warn);border-radius:14px;padding:1rem 1.2rem;
+    font-size:.9rem;color:var(--ink);}
+  .note b{color:var(--warn);}
+  footer{border-top:1px solid var(--line);margin-top:1rem;padding:2rem 0 3rem;color:var(--muted);font-size:.85rem;}
+  footer a{font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">AI</div>
+    <div><b>Корпоративный ИИ-Ассистент</b><div class="sub">On-Premise RAG · Petrel AI</div></div>
+    <div class="badge"><span class="dot"></span>Локальный контур</div>
+  </header>
+
+  <div class="hero">
+    <span class="tag">Astana Hub · тех-задача Petrel AI</span>
+    <h1>Поиск по базе знаний,<br><span class="g">который не покидает контур</span></h1>
+    <p class="lead">Локальная RAG-система: отвечает на вопросы по внутренним регламентам на казахском и русском, со ссылками на первоисточники. Open-Source LLM, гибридный поиск, реранкер — <b>без единого внешнего API</b>.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/wpalish/petrel-rag-v5">Код на GitHub →</a>
+      <a class="btn ghost" href="#security">Почему это безопасно</a>
+    </div>
+  </div>
+
+  <section>
+    <h2>Возможности</h2>
+    <p class="sub2">Production-архитектура, а не туториал на LangChain.</p>
+    <div class="grid g3">
+      <div class="card"><div class="ic">🔒</div><h3>Полная локальность</h3><p>LLM, эмбеддинги, реранкер и вектор-БД работают на сервере компании. Нет OpenAI, Anthropic, Cohere.</p></div>
+      <div class="card"><div class="ic">📖</div><h3>Цитаты на первоисточники</h3><p>Каждое утверждение сопровождается ссылкой [N] на документ, страницу и раздел.</p></div>
+      <div class="card"><div class="ic">🧠</div><h3>Гибридный поиск + реранкер</h3><p>Dense (bge-m3) + BM25 + RRF + bge-reranker-v2-m3. Смысл и точные формулировки одновременно.</p></div>
+      <div class="card"><div class="ic">🌍</div><h3>Казахский и русский</h3><p>Автоопределение языка вопроса, ответ без смешения языков.</p></div>
+      <div class="card"><div class="ic">🛡️</div><h3>Анти-галлюцинации</h3><p>Порог релевантности + строгий промпт + программный «нет информации» при отсутствии ответа.</p></div>
+      <div class="card"><div class="ic">📊</div><h3>Оценка и мониторинг</h3><p>Локальный eval-харнесс (без OpenAI) + Prometheus-метрики и дашборды Grafana.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Как работает</h2>
+    <p class="sub2">Гибридный конвейер извлечения — это и есть «интеллектуальность».</p>
+    <div class="pipe">
+      <span class="step">Вопрос KZ/RU</span><span class="arr">→</span>
+      <span class="step">Dense (bge-m3)</span><span class="arr">+</span>
+      <span class="step">BM25</span><span class="arr">→</span>
+      <span class="step hl">RRF fusion</span><span class="arr">→</span>
+      <span class="step hl">Reranker</span><span class="arr">→</span>
+      <span class="step">Порог + PDR</span><span class="arr">→</span>
+      <span class="step">LLM → ответ + [цитаты]</span>
+    </div>
+  </section>
+
+  <section id="security">
+    <div class="sec-band">
+      <h2>Безопасность — главное требование</h2>
+      <p class="sub2" style="margin-bottom:0">Данные и телеметрия не покидают сервер. Это не опция, а архитектурный принцип.</p>
+      <div class="sec-grid">
+        <div class="sec-item"><span class="ck">✓</span><div><b>Нет внешних API</b><span>LLM локальный (vLLM / Ollama). RAGAS убран — он по умолчанию ходит в OpenAI.</span></div></div>
+        <div class="sec-item"><span class="ck">✓</span><div><b>Аудит телеметрии</b><span>Скрипт проверяет код, зависимости и активные соединения перед сдачей.</span></div></div>
+        <div class="sec-item"><span class="ck">✓</span><div><b>Air-gap режим</b><span>HF_HUB_OFFLINE — модели из кэша, ноль обращений в сеть.</span></div></div>
+        <div class="sec-item"><span class="ck">✓</span><div><b>Аутентификация</b><span>Basic Auth на чувствительные эндпоинты, timing-safe сравнение.</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Проверено в работе</h2>
+    <p class="sub2">Прототип прогнан end-to-end локально (на Apple M4, через Ollama, без GPU).</p>
+    <div class="metrics">
+      <div class="metric"><b>1.0</b><span>groundedness<br>(локальный судья)</span></div>
+      <div class="metric"><b>0.97</b><span>language purity<br>(KZ/RU)</span></div>
+      <div class="metric"><b>85</b><span>автотестов<br>зелёные</span></div>
+      <div class="metric"><b>~0.4с</b><span>TTFT<br>(тёплая модель)</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Стек</h2>
+    <p class="sub2">Только Open-Source, всё разворачивается в контуре.</p>
+    <div class="stack">
+      <span class="chip">Qwen2.5-7B</span><span class="chip">vLLM / Ollama</span><span class="chip">bge-m3</span>
+      <span class="chip">bge-reranker-v2-m3</span><span class="chip">Qdrant</span><span class="chip">BM25 + RRF</span>
+      <span class="chip">FastAPI</span><span class="chip">Gradio</span><span class="chip">Prometheus + Grafana</span><span class="chip">Docker</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="note">⚠️ <b>Это витрина проекта, не работающее приложение.</b> Сам ассистент — <b>on-premise</b> по требованию ТЗ: он работает только в защищённом контуре компании и не выкладывается в публичный интернет. Живая демонстрация — локальный запуск на созвоне. Исходный код открыт на GitHub.</div>
+  </section>
+
+  <footer>
+    <div class="wrap" style="padding:0">
+      <b>Алишер Нурсаин</b> · AI/LLM-инженер — Python, FastAPI<br>
+      <a href="https://github.com/wpalish/petrel-rag-v5">github.com/wpalish/petrel-rag-v5</a> ·
+      <a href="https://github.com/wpalish">github.com/wpalish</a> ·
+      alisher.nursain@gmail.com
+    </div>
+  </footer>
+</div>
+</body>
+</html>
